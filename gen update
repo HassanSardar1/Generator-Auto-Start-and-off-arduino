@@ -1,0 +1,301 @@
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+#include <arduino-timer.h>
+#include <Servo.h>
+Servo myservo;
+//SERVO CHOKE AUTO
+unsigned long currentMillis; // TO Count Arduino time
+byte servoPos = 180; // Starting point 
+int servoPause = 500;// Turning speed 
+unsigned long previousMillisServo; // To reset current millis
+const int pushButton1 = A0; //Declared 'A' button
+const int pushButton2 = A1; //Declared 'B' button
+const int pushButton3 = A2; //Declared 'D' button
+      int pushButton4 = A3; //Declared 'C' button
+const int LIGHT_HAI_YA_NAHI = 11;   //LIGHT HAI_YA_NAHI.........Logical INPUT
+const int GENERATOR_START_STOP = 12;   //GENERAOT_START HAI_YA_NAHI.......Logical INPUT
+int pushed2 =0;// status of each button
+int state = 0, AUTO_MANUAL=0;// status of each button
+const int relayPin1 = 5; //Declared Relay1
+const int relayPin2 = 4; //Declared Relay2
+const int relayPin3 = 3; //Declared Relay3
+const int relayPin4 = 2; //Declared Relay3
+int relay2Status =HIGH; //Declared Relay2 STATUS OFF
+int relay1Status = HIGH;
+auto timer = timer_create_default(); // create a timer with default settings
+
+
+//<<<<<<<<<<<<<<--------------------------------------------------------END DELARATION--------------------------------------------------->>>>>>>>>>>>>>>>>>>>>>>>>>
+
+bool START_GEN (void *) { lcd.setCursor(0,1); lcd.print("Starting Generator.."); digitalWrite(relayPin1, !digitalRead(relayPin1));  return true; } // Toggle Gnerator Starting Function
+
+//<<<<<<<<<<<<<<--------------------------------------------------------END FUNCTION AREA--------------------------------------------------->>>>>>>>>>>>>>>>>>>>>>>>>>
+void setup() {
+lcd.begin();
+Serial.begin(9600);                                  //Screen DElaring
+myservo.attach(6);                                 //SERVO ATTACH PIN
+myservo.write(servoPos);                           //INITIALIZE SERVO POSITION
+pinMode(pushButton1, INPUT_PULLUP);                      //TAKING ASS INPUT
+pinMode(pushButton2, INPUT_PULLUP);                     //TAKING ASS INPUT
+pinMode(pushButton3, INPUT_PULLUP);                    //TAKING ASS INPUT
+pinMode(pushButton4, INPUT_PULLUP);                   //TAKING ASS INPUT
+pinMode(LIGHT_HAI_YA_NAHI, INPUT_PULLUP);     //INPUT PULL BC RELAY ATTACH BUTTON
+pinMode(GENERATOR_START_STOP, INPUT_PULLUP); //INPUT PULL BC RELAY ATTACH BUTTON
+pinMode(relayPin1, OUTPUT);                 //Relay output for START
+pinMode(relayPin2, OUTPUT);                //Relay output for STOP
+pinMode(relayPin3, OUTPUT);               //Relay output for LIGHT
+pinMode(relayPin4, OUTPUT);               //Relay output for LIGHT
+digitalWrite(relayPin1, HIGH);         //SETTING HIGH
+digitalWrite(relayPin2, HIGH);        //SETTING HIGH
+digitalWrite(relayPin3, HIGH);       //SETTING HIGH
+digitalWrite(relayPin4, HIGH);       //SETTING HIGH
+digitalWrite(pushButton1, HIGH);    //SETTING HIGH
+digitalWrite(pushButton2, HIGH);    //SETTING HIGH
+digitalWrite(pushButton3, HIGH);     //SETTING HIGH
+digitalWrite(pushButton4, HIGH);        //SETTING HIGH
+digitalWrite(LIGHT_HAI_YA_NAHI, HIGH);   //SETTING HIGH
+digitalWrite(GENERATOR_START_STOP, HIGH);  //SETTING HIGH
+timer.every(4000, START_GEN);              //Call START GEN Fucntion Every 4 SEC
+}
+
+void increment(unsigned long &mint) {         //ReSET Time For SELF interval
+  mint=0;
+ mint = millis()  + 36000;}                 
+
+unsigned long minut= 36000;                    //36000INITIAL 16*2+2 SECONDS..
+
+
+void go(unsigned long &mint2) {                // //ReSET Time For Choke Break At first
+ mint2=0;
+ mint2 = millis()  + 18000;}
+unsigned long minut2= 18000;                       //16 seconds INITIAL 8*2+2 SECONDS..
+
+
+
+void loop() {
+       currentMillis = millis();                      //Getting current arduino time;
+       int START_BUTTON = digitalRead(pushButton1);     // giving name to buttons 
+       int STOP_BUTTON = digitalRead(pushButton2);        // giving name to buttons 
+       int CHOKE_BUTTON = digitalRead(pushButton3);         // giving name to buttons 
+       int LIGHT = digitalRead(LIGHT_HAI_YA_NAHI);              // giving name to buttons 
+       int GENERATOR = digitalRead(GENERATOR_START_STOP);          // giving name to buttons 
+    if (state == 0 && digitalRead(pushButton4) == HIGH) {
+    state = 1;
+    AUTO_MANUAL=!AUTO_MANUAL;
+        lcd.clear();
+  }
+  if (state == 1 && digitalRead(pushButton4) == LOW) {   
+    state = 0;
+  }
+  if(AUTO_MANUAL==HIGH){lcd.setCursor(0,0);
+    lcd.print("Manual Mode");}else if (millis() < minut ){ 
+      lcd.setCursor(9,0);
+        for(int n = 0; n < 11; n++)
+        {
+                lcd.print(" ");
+        }
+      lcd.setCursor(0,0);
+    lcd.print("Auto Mode");};
+    if(STOP_BUTTON == HIGH  && relay2Status == LOW){
+      pushed2 = 1-pushed2; }     // CREATIng PUSH BUTton
+      relay2Status = STOP_BUTTON;
+      relay1Status = relayPin1;
+      
+//<<<<<<<<<<<<<<<<<<<------------------------------------------------------------TIME RESET CONDITIONS------------------------------------------------------------>>>>>>>>>>>>>>>>>>>       
+if (LIGHT==LOW or AUTO_MANUAL==HIGH or GENERATOR==LOW){
+  
+  minut=0;
+  minut=36000;
+  
+  }
+if (millis() > minut && LIGHT==LOW or millis()> minut && AUTO_MANUAL==HIGH or millis()> minut && GENERATOR==LOW or LIGHT==LOW or AUTO_MANUAL==HIGH or GENERATOR==LOW)
+{
+
+  
+  if (minut >= currentMillis +36000){}else{increment(minut);}
+  if (minut2>= currentMillis +18000){}else{go      (minut2);}
+}
+
+
+//<<<<<<<<<<<<<<<<<<<------------------------------------------------------------AUTO   START  System------------------------------------------------------------>>>>>>>>>>>>>>>>>>>
+if(AUTO_MANUAL==LOW){
+  if(digitalRead(relayPin1) == 1 && millis() < minut ){lcd.setCursor(0,1); for(int n = 0; n < 20; n++)
+        {
+                lcd.print(" ");
+        }}
+  lcd.setCursor(0,3);
+         if(millis() < minut ){
+  if(LIGHT==HIGH){lcd.setCursor(0,3);lcd.print("LIGHT OFF"); }else{lcd.setCursor(0,3);lcd.print("LIGHT ON");lcd.setCursor(8,3);
+        for(int n = 0; n < 2; n++)
+        {
+                lcd.print(" ");
+        };
+         lcd.setCursor(0,1);
+        for(int n = 0; n < 20; n++)
+        {
+                lcd.print(" ");
+        }
+         lcd.setCursor(0,2);
+        for(int n = 0; n < 20; n++)
+        {
+                lcd.print(" ");
+        }
+        }
+ 
+  if(GENERATOR==HIGH){lcd.setCursor(8,3);
+        for(int n = 0; n < 2; n++)
+        {
+                lcd.print(" ");}
+                lcd.setCursor(17,3);
+        for(int n = 0; n < 2; n++)
+        {
+                lcd.print(" ");
+        }lcd.setCursor(10,3);lcd.print("GEN OFF");}else{lcd.setCursor(10,3);lcd.print("GEN ON");lcd.setCursor(16,3);
+        for(int n = 0; n < 2; n++)
+        {
+                lcd.print(" ");
+        };
+         lcd.setCursor(0,1);
+        for(int n = 0; n < 20; n++)
+        {
+                lcd.print(" ");
+        }
+         lcd.setCursor(0,2);
+        for(int n = 0; n < 20; n++)
+        {
+                lcd.print(" ");
+        }}
+        }
+               
+ if(LIGHT==HIGH && GENERATOR==HIGH){ if (millis() < minut) { timer.tick();
+if(currentMillis - previousMillisServo >= servoPause && millis() > minut2 && digitalRead(relayPin1) == 0){moveTheServo(); }
+                                                                                            }else{ 
+myservo.write(180); digitalWrite(relayPin1, HIGH);}   } else{ myservo.write(180); digitalWrite(relayPin1, HIGH);} //<---------------GENERATOR START AUTO
+
+if(LIGHT==LOW && GENERATOR==LOW ){lcd.setCursor(0,1); lcd.print("Stopping Generator"); digitalWrite(relayPin2, LOW);} else{digitalWrite(relayPin2, HIGH); } //<---------------GENERATOR OFF AUTO
+START_BUTTON==LOW;  // AUTO SYSTEM SO KEPT OFF
+pushed2==LOW;      //  AUTO SYSTEM SO KEPT OFF
+CHOKE_BUTTON==LOW;//   AUTO SYSTEM SO KEPT OFF
+if (millis() > minut ){ lcd.setCursor(0,0);
+                                     lcd.print("System Failed To");
+                                     lcd.setCursor(15,1);
+        for(int n = 0; n <4; n++)
+        {
+                lcd.print(" ");
+        }
+                                     lcd.setCursor(0,1);
+                                     lcd.print("Start Generator");
+                                     lcd.setCursor(0,2);
+                                      lcd.print("Automatically Please");
+                                      lcd.setCursor(0,3);
+                                      lcd.print("Reset To Try Again");}
+                                             
+//<<<<<<<<<<<<<<<<<<<------------------------------------------------------------AUTO System END------------------------------------------------------------>>>>>>>>>>>>>>>>>>>
+                }else { //IF MANUAL START FUNCTION ON THEN BELOW CODE WILL BE RESPONSIBLE FOR MANAGE
+//<<<<<<<<<<<<<<<<<<<------------------------------------------------------------Manual System------------------------------------------------------------>>>>>>>>>>>>>>>>>>>
+if(CHOKE_BUTTON==LOW && pushed2==LOW){lcd.setCursor(0,2); for(int n = 0; n < 20; n++)
+        {
+                lcd.print(" ");
+        }}
+if(GENERATOR==HIGH){lcd.setCursor(10,3);lcd.print("GEN OFF");}else{lcd.setCursor(10,3);lcd.print("GEN ON");lcd.setCursor(16,3);
+        for(int n = 0; n < 2; n++)
+        {
+                lcd.print(" ");
+        };}
+         if(LIGHT==HIGH){lcd.setCursor(0,3);lcd.print("LIGHT OFF"); }else{lcd.setCursor(0,3);lcd.print("LIGHT ON");lcd.setCursor(8,3);
+        for(int n = 0; n < 2; n++)
+        {
+                lcd.print(" ");
+        };}
+if(START_BUTTON==HIGH && LIGHT==HIGH && GENERATOR==HIGH && pushed2==LOW){digitalWrite(relayPin1, LOW); lcd.setCursor(0,1);lcd.print("Starting Generator.."); } else{lcd.setCursor(0,1);for(int n = 0; n < 20; n++)
+        {
+                lcd.print(" ");
+        }digitalWrite(relayPin1, HIGH);} //<---------------GENERATOR START MANUAL
+if(pushed2==HIGH){digitalWrite(relayPin2, LOW);lcd.setCursor(0,2);lcd.print("Stopping Generator.."); } else{digitalWrite(relayPin2, HIGH);}                                                     //<---------------GENERATOR OFF MANUAL
+if(CHOKE_BUTTON==HIGH && GENERATOR==HIGH && pushed2 ==LOW){  
+                                                          if (currentMillis - previousMillisServo >= servoPause) { moveTheServo();
+                                                          } 
+                                                         }else{
+                                                               if(GENERATOR==HIGH){myservo.write(180);}} 
+                                                               }    }                           //<---------------COKE ON / OFF MANUAL
+//<<<<<<<<<<<<<<<<<------------------------------------------------------------Manual System END------------------------------------------------------------>>>>>>>>>>>>>>>>>>               
+
+void moveTheServo()
+{
+  Serial.print("moving the servo to ");
+  lcd.setCursor(0,2);
+  lcd.print("Moving Choke");
+  lcd.setCursor(18,2);
+        for(int n = 0; n < 2; n++)
+        {
+                lcd.print(" ");
+        }
+  bool newMove=true; //otherwise it does all the moves all the time
+  if (servoPos == 180 && newMove) 
+  {
+    servoPos = 170;
+    newMove=false;
+  }
+if (servoPos == 170&& newMove) 
+  {
+    servoPos = 160;
+    newMove=false;
+  }
+  if (servoPos == 160 && newMove) 
+  {
+    servoPos = 150;
+    newMove=false;
+  }
+  if (servoPos == 150 && newMove) 
+  {
+    servoPos = 140;
+    newMove=false;
+  }
+  
+   if (servoPos == 140 && newMove) 
+  {
+    servoPos = 130;
+    newMove=false;
+  }
+  if (servoPos == 130 && newMove) 
+  {
+    servoPos = 120;
+    newMove=false;
+  }
+  if (servoPos == 120 && newMove) 
+  {
+    servoPos = 110;
+    newMove=false;
+  }
+  if (servoPos == 110 && newMove) 
+  {
+    servoPos = 100;
+    newMove=false;
+  }
+  if (servoPos == 100 && newMove) 
+  {
+    servoPos = 90;
+    newMove=false;
+  }
+   if (servoPos == 90 && newMove) 
+  {
+    servoPos = 80;
+    newMove=false;
+  }
+     if (servoPos == 80 && newMove) 
+  {
+    servoPos = 180;
+    newMove=false;
+  }
+  
+  Serial.println(servoPos);
+  myservo.write(servoPos);
+lcd.setCursor(15,2);
+lcd.print("(");
+lcd.print(servoPos);
+lcd.print(")");
+
+  previousMillisServo = currentMillis;
+  
+}//MOVE THE CHOKE SERVO
