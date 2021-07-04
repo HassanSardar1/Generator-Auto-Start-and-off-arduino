@@ -1,0 +1,73 @@
+const int GEAR1 = 22; //Declared Relay1
+const int GEAR2 = 17; //Declared Relay1
+const int GEAR3 = 18; //Declared Relay1
+const int GEAR4 = 19; //Declared Relay1
+const int Leaver_Front = 27;  // the number of the pushbutton pin
+const int Leaver_Back = 26;   //LIGHT HAI_YA_NAHI.........Logical INPUT
+const int Neutral  = 25;   //LIGHT HAI_YA_NAHI.........Logical INPUT
+int LeaverPushCounter = 0;   // counter for the number of button presses
+int LeaverState = 0;         // current state of the button
+int lastLeaverState = 0;     // previous state of the button
+int LeaverState2 = 0;         // current state of the button
+int lastLeaverState2 = 0;     // previous state of the button
+
+void setup() {
+  Serial.begin(115200);  
+  pinMode(Leaver_Front, INPUT_PULLUP);
+  pinMode(Leaver_Back, INPUT_PULLUP);
+  pinMode(Neutral, INPUT_PULLUP);
+  pinMode(GEAR1, OUTPUT);
+  pinMode(GEAR2, OUTPUT);
+  pinMode(GEAR3, OUTPUT);
+  pinMode(GEAR4, OUTPUT);
+  digitalWrite(GEAR1, HIGH);
+  digitalWrite(GEAR2, HIGH);
+  digitalWrite(GEAR3, HIGH);
+  digitalWrite(GEAR4, HIGH);
+ 
+}
+
+void loop() {
+ int NeutralState=digitalRead(Neutral);
+ LeaverState = digitalRead(Leaver_Front);
+ LeaverState2 = digitalRead(Leaver_Back);
+ if(NeutralState==LOW){LeaverPushCounter=0;}
+
+if (LeaverState != lastLeaverState & LeaverPushCounter<4) {
+    if (LeaverState == LOW) {
+      LeaverPushCounter++;
+      Serial.println("on");
+      Serial.print("number of button pushes: ");
+      Serial.println(LeaverPushCounter);
+    }
+      lastLeaverState = LeaverState;
+  }else{if (LeaverState2 != lastLeaverState2 & LeaverPushCounter>0) {
+    if (LeaverState2 == LOW) {
+      LeaverPushCounter--;
+      Serial.println("on");
+      Serial.print("number of button pushes: ");
+      Serial.println(LeaverPushCounter);
+    }
+      lastLeaverState2 = LeaverState2;
+  }}
+        Serial.println(LeaverPushCounter);
+  
+  int Gear=LeaverPushCounter;
+ 
+  if (LeaverPushCounter == 1) {
+    digitalWrite(GEAR1, LOW);
+      Serial.println("GEAR1_LOW");
+  } else{digitalWrite(GEAR1, HIGH);};
+  if (LeaverPushCounter == 2) {
+    digitalWrite(GEAR2, LOW);
+     Serial.println("GEAR2_LOW");
+  } else{digitalWrite(GEAR2, HIGH);};
+  if (LeaverPushCounter == 3) {
+    digitalWrite(GEAR3, LOW);
+     Serial.println("GEAR3_LOW");
+  } else{   digitalWrite(GEAR3, HIGH);};
+  if (LeaverPushCounter == 4) {
+    digitalWrite(GEAR4, LOW);
+     Serial.println("GEAR4_LOW");
+  } else{ digitalWrite(GEAR4, HIGH);};
+}
